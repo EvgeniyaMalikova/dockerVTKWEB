@@ -1,14 +1,14 @@
 {
-"resources": [ {"port_range": [9019, 9019], "host": "localhost"} ],
+"resources": [ {"port_range": [9001, 9019], "host": "0.0.0.0"} ],
 "sessionData": {
 "updir": "/Home"
 },
 "configuration": {
 "log_dir": "/data/pvw/logs",
-"host": "localhost",
+"host": "0.0.0.0",
 "endpoint": "paraview",
 "sessionURL": "ws://localhost/proxy?sessionId=${id}&path=ws",
-"timeout": 25,
+"timeout": 55,
 "upload_dir": "/data/pvw/upload",
 "fields": ["file", "host", "port", "updir"],
 "port": 9020,
@@ -22,7 +22,7 @@
 "apps": {
 "cone" : {
 "cmd" : [
-"${vtkpython}", "${vtk_python_path}/vtkw-server.py", "--port", "${port}", "--updir","${dataDir}", "--session", "${id}", "--host","0.0.0.0"],
+"${vtkpython}", "${vtk_python_path}/vtkw-server.py", "--port", "${port}", "--updir","${dataDir}","--session", "${id}","--host","0.0.0.0"] ,
 "ready_line" : "Starting factory"
 }
 }
