@@ -34,12 +34,13 @@ service apache2 reload
 service apache2 restart 
 
 export DISPLAY=:0.0
-export PYTHONPATH="/data/pv/pv-5.9/lib/python3.8/site-packages/"
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/data/pv/pv-5.9/lib
+export PYTHONPATH="/data/pv/pv-5.9/lib64/python3.8/site-packages/"
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/data/pv/pv-5.9/lib64
 export PATH=$PATH:/data/pv/pv-5.9/bin
 /bin/sh
-vtkpython /data/pv/pv-5.9/lib/python3.8/site-packages/wslink/launcher.py /data/pvw/conf/launcher.json &
-#vtkpython /data/pv/pv-5.9/share/vtkjsserver/vtkw-server.py --port 1234 --host 0.0.0.0 # the direct connection works
+echo "Starting the wslink launcher"
+python /data/pv/pv-5.9/lib64/python3.8/site-packages/wslink/launcher.py /data/pvw/conf/launcher.json &
+#vtkpython /data/pv/pv-5.9/share/vtkjsserver/vtkw-server.py --port 1234 --host 0.0.0.0
 echo "Starting the wslink launcher"
 
 /bin/sh
