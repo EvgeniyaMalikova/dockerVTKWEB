@@ -1,6 +1,7 @@
 FROM  nvidia/opengl:1.2-glvnd-devel-ubuntu20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
+MAINTAINER Evgeniya Malikova <evgeniya.malikova@port.ac.uk>
 
 ENV NVIDIA_VISIBLE_DEVICES=all NVIDIA_DRIVER_CAPABILITIES=all
 
@@ -48,8 +49,10 @@ CMD echo "Start building ViaLactea"
 USER root
 
 WORKDIR /opt/src
-RUN git clone https://github.com/NEANIAS-Space/<repo>.git --branch dev_test
-WORKDIR /opt/src/<repo>/INSTALL/CFITSIO
+
+CMD echo "Start building ViaLactea"
+RUN git clone https://github.com/NEANIAS-Space/ViaLacteaWeb.git  #--branch dev_test
+WORKDIR /opt/src/ViaLacteaWeb/INSTALL/CFITSIO
 RUN mkdir build
 
 RUN cd build \
@@ -59,7 +62,7 @@ RUN cd build \
 CMD echo "CFITSIO was build"
 
 RUN apt-get update && apt-get install -y libcurl4-openssl-dev --fix-missing
-WORKDIR /opt/src/<repo>
+WORKDIR /opt/src/ViaLacteaWeb
 RUN mkdir build
 
 
@@ -97,8 +100,8 @@ RUN groupadd pvw-user && \
  
 
 RUN mkdir -p /data/pvw /data/logs /data/www
-RUN cp -r /opt/src/<repo>/remote/ /data/pv/pv-5.9/share
-RUN cp -r /opt/src/<repo>/client/ /data/www 
+RUN cp -r /opt/src/ViaLacteaWeb/remote/ /data/pv/pv-5.9/share
+RUN cp -r /opt/src/ViaLacteaWeb/client/ /data/www 
 
 RUN ln -s /data/pv/pv-5.9 /data/pv/pv-current
 RUN chown -R pvw-user:pvw-user /data/pv
@@ -130,11 +133,25 @@ RUN pip3 install wslink
 
 RUN pip3 install autobahn
 
+# RUN cd /data/pv/pv-5.9/lib/python3.8/site-packages && ls
+
+# Tested
+# RUN vtkpython /data/pv/pv-5.9/share/remote/vtkjsserver/vtkjsserver/vtkw-server.py --port 1234
+
+#contents of /data/pvw will be mounted as external volume between apache and vlw containers
+#RUN echo "#!/bin/bash" >> /data/pvw/bin/start.sh
+#RUN echo "export DISPLAY=:0.0" >> /data/pvw/bin/start.sh
+#RUN echo "export PYTHONPATH="/data/pv/pv-5.9/lib64/python3.8/site-packages/"" >> /data/pvw/bin/start.sh
+#RUN echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/data/pv/pv-5.9/lib64" >> /data/pvw/bin/start.sh
+#RUN echo "export PATH=$PATH:/data/pv/pv-5.9/bin" >> /data/pvw/bin/start.sh
+#RUN echo "vtkpython /data/pv/pv-5.9/lib64/python3.8/site-packages/wslink/launcher.py /data/pvw/conf/launcher.json &" >> /data/pvw/bin/start.sh
 
 # Copy the apache configuration file into place
 CMD echo "Copying launcher files "
 
+CMD echo "Launcher copied"
 COPY config/launcher/launcher.json /data/pvw/conf/launcher.json
+
 COPY config/apache/001-vlw.conf /etc/apache2/sites-available/001-vlw.conf
 
 # Copy the script into place
@@ -151,21 +168,39 @@ RUN a2enmod vhost_alias && \
     a2enmod rewrite && \
     a2enmod headers && \
     a2dissite 000-default.conf && \
-    a2ensite 001-vlw
+    a2ensite 001-vlw && \
+    a2dismod autoindex -f
 
 
 # Open port 80 to the world outside the container
 EXPOSE 80
 
-RUN cp -a /opt/src/<repo>/client/. /data/www/
+RUN cp -a /opt/src/ViaLacteaWeb/client/. /data/www/
 
-RUN cp -a /opt/src/<repo>/remote/vtkjsserver/vtkjsserver/. /data/pv/pv-5.9/share/vtkjsserver/
+RUN cp -a /opt/src/ViaLacteaWeb/remote/vtkjsserver/vtkjsserver/. /data/pv/pv-5.9/share/vtkjsserver/
 
 RUN mkdir /data/www/logs
 
 RUN chown -R $USER:$USER /data/www
 RUN chmod -R 755 /data/www
 
+# Start the container.  If we're not running this container, but rather are
+# building other containers based on it, this entry point can/should be
+# overridden in the child container.  In that case, use the "start.sh"
+# script instead, or you can provide a custom one.
+#ENTRYPOINT ["/data/pvw/bin/server.sh"]
+
+#USER pvw-user
+
+
+CMD echo "Run tests"
+
+WORKDIR /opt/src/ViaLacteaWeb/build/bin
+RUN ls
+
+
+#CMD /bin/sh
+#ENTRYPOINT ["/data/pvw/bin/start.sh"]
 
 ENV APACHE_RUN_USER www-data
 ENV APACHE_RUN_GROUP www-data
@@ -178,16 +213,24 @@ RUN mkdir -p ${APACHE_RUN_DIR}
 
 
 COPY scripts/init.sh /data/pvw/bin
+#COPY scripts/start.sh /data/pvw/bin
+CMD echo "Copy client"
 ADD client /data/www/
 
 EXPOSE 9020
 EXPOSE 9019
-#EXPOSE 9000 9001 9002 9003 9004 9005 9006 9007 9008
-#EXPOSE 1234
+EXPOSE 9000 9001 9002 9003 9004 9005 9006 9007 9008
+EXPOSE 1234
 
 #USER pvw-user
 
 RUN mkdir /home/pvw-user/files
 
 ENTRYPOINT sh /data/pvw/bin/init.sh
-
+#ENTRYPOINT /data/pvw/bin/init.sh
+#ENTRYPOINT ["/usr/sbin/apache2"]
+#CMD ["-D", "FOREGROUND"]
+#COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+#EXPOSE 8000 
+#CMD ["/usr/bin/supervisord"]
+#CMD sh /etc/apache2/envvars && exec /usr/sbin/apache2 -DFOREGROUND
