@@ -1,7 +1,7 @@
 FROM  nvidia/opengl:1.2-glvnd-devel-ubuntu20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-MAINTAINER Evgeniya Malikova <evgeniya.malikova@port.ac.uk>
+
 
 ENV NVIDIA_VISIBLE_DEVICES=all NVIDIA_DRIVER_CAPABILITIES=all
 
